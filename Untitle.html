@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Стили для графа */
+    .contribution-graph {
+      display: grid;
+      grid-template-columns: repeat(51, 1fr);
+      gap: 1px;
+    }
+
+    .contribution-cell {
+      position: relative;
+      width: 15px;
+      height: 15px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .contribution-tooltip {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      font-family: Inter;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      letter-spacing: 0em;
+      text-align: left;
+      width: 145px;
+      height: 42px;
+      transform: translateX(-50%);
+      background-color:#000000;
+      border-radius: 3px;
+      padding: 5px;
+      display: none;
+      color: #FFFFFF;
+    }
+
+    /* Цвета для различных уровней контрибуций */
+    .level-0 { background-color: #EDEDED; }
+    .level-1 { background-color: #ACD5F2; }
+    .level-2 { background-color: #7FA8C9; }
+    .level-3 { background-color: #527BA0; }
+    .level-4 { background-color: #254E77; }
+  </style>
+</head>
+<body>
+  <div id="contributionGraph" class="contribution-graph"></div>
+
+<script>
+// Функция для создания графа
+async function createContributionGraph() {
+  const graphContainer = document.getElementById('contributionGraph');
+  const dataUrl = 'https://dpg.gg/test/calendar.json';
+
+  try {
+    // Получение данных
+    const response = await fetch(dataUrl);
+    const data = await response.json();
+
+    // Формирование графа
+    const currentDate = new Date();
+    for (let i = 50; i >= 0; i--) {
+      const row = document.createElement('div');
+      row.classList.add('contribution-row');
+
+      for (let j = 0; j < 7; j++) {
+        const cell = document.createElement('div');
+        cell.classList.add('contribution-cell');
+
+        // Вычисление текущей даты для ячейки
+        const cellDate = new Date(currentDate);
+        cellDate.setDate(currentDate.getDate() - (i * 7 + j));
+
+        // Получение строкового формата даты для использования в запросе
+        const dateStringForQuery = cellDate.toISOString().split('T')[0];
+
+        // Форматирование даты для отображения
+        const dateStringForDisplay = formatDate(cellDate);
+
+        // Поиск контрибуций для текущей даты
+        const contributions = data[dateStringForQuery] || 0;
+
+        // Присвоение класса в зависимости от уровня контрибуций
+        if (contributions === 0) {
+          cell.classList.add('level-0');
+        } else if (contributions < 10) {
+          cell.classList.add('level-1');
+        } else if (contributions < 20) {
+          cell.classList.add('level-2');
+        } else if (contributions < 30) {
+          cell.classList.add('level-3');
+        } else {
+          cell.classList.add('level-4');
+        }
+
+        // Добавление всплывающей подсказки
+        const tooltip = document.createElement('div');
+        tooltip.classList.add('contribution-tooltip');
+        tooltip.innerHTML = `${contributions} контрибуций<br>${getDayOfWeekInRussian(cellDate)}, ${dateStringForDisplay}`;
+        cell.appendChild(tooltip);
+
+        cell.addEventListener('mouseover', () => {
+          tooltip.style.display = 'block';
+        });
+
+        cell.addEventListener('mouseout', () => {
+          tooltip.style.display = 'none';
+        });
+
+        row.appendChild(cell);
+      }
+
+      graphContainer.appendChild(row);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+}
+
+// Функция для форматирования даты
+function formatDate(date) {
+  const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+  return date.toLocaleDateString('ru-RU', options);
+}
+
+// Функция для получения дня недели на русском
+function getDayOfWeekInRussian(date) {
+  const daysOfWeek = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+  return daysOfWeek[date.getDay()];
+}
+
+// Вызов функции для создания графа
+createContributionGraph();
+
+</script>
+</body>
+</html>
